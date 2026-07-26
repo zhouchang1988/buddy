@@ -61,6 +61,7 @@ export default function App() {
   // Sync language to main process for menu i18n
   const language = useLanguage()
   useEffect(() => {
+    document.documentElement.lang = language
     window.api.updateMenuLanguage(language)
   }, [language])
 

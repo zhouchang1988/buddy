@@ -5,7 +5,7 @@ import { renderMarkdown } from '../lib/markdown'
 import { formatDuration, formatTimeWithRelativeDate, decodeErrorText, unescapeText, ACTOR_LABEL_KEY, actorText } from '../lib/format'
 import { useLanguage, useT } from '../hooks/useI18n'
 import { useRoundEvents } from '../hooks/useBuddy'
-import { translate } from '../lib/i18n'
+import { translate, Language } from '../lib/i18n'
 
 interface MessageBubbleProps {
   entry: TranscriptEntry
@@ -175,28 +175,61 @@ function renderHealthCheckText(entry: TranscriptEntry, lang: ReturnType<typeof u
   const content = entry.content
   if (content === 'health_check.started') {
     const actors = (meta.actors as string[]) || []
-    const actorNames = actors.map(a => actorText(a, lang)).join(lang === 'en' ? ' and ' : ' 和 ')
+    const andSep =
+      lang === 'en' ? ' and '
+        : lang === 'ja' ? ' と '
+          : lang === 'ko' ? ' 및 '
+            : lang === 'fr' ? ' et '
+              : lang === 'es' ? ' y '
+                : ' 和 '
+    const actorNames = actors.map(a => actorText(a, lang)).join(andSep)
     if (lang === 'en') return `Checking ${actorNames} connectivity…`
     if (lang === 'zh-TW') return `正在檢查 ${actorNames} 的連通性…`
+    if (lang === 'ja') return `${actorNames} の接続を確認中…`
+    if (lang === 'ko') return `${actorNames} 연결 확인 중…`
+    if (lang === 'fr') return `Vérification de la connectivité de ${actorNames}…`
+    if (lang === 'es') return `Comprobando la conectividad de ${actorNames}…`
     return `正在检查 ${actorNames} 的连通性…`
   }
   if (content === 'health_check.passed') {
     const sessionIds = (meta.session_ids as { actor: string; session_id: string | null }[]) || []
+    const sessionLabel =
+      lang === 'ja' ? 'セッション'
+        : lang === 'ko' ? '세션'
+          : lang === 'es' ? 'sesión'
+            : lang === 'zh-CN' || lang === 'zh-TW' ? '会话'
+              : 'session'
     const details = sessionIds.map(({ actor, session_id }) => {
       const name = actorText(actor, lang)
       const ready = translate(lang, 'health_check.actorPassed').replace('{actor}', name)
-      if (session_id) return `${ready}，${lang === 'en' ? 'session' : '会话'} ID: ${session_id.slice(0, 12)}...`
+      if (session_id) return `${ready}，${sessionLabel} ID: ${session_id.slice(0, 12)}...`
       return ready
     })
-    return details.join(lang === 'en' ? '; ' : '；') + '。' + translate(lang, 'health_check.allPassed')
+    const listSep = lang === 'zh-CN' || lang === 'zh-TW' || lang === 'ja' ? '；' : '; '
+    const sentenceEnd = lang === 'zh-CN' || lang === 'zh-TW' || lang === 'ja' || lang === 'en' ? '。' : '. '
+    return details.join(listSep) + sentenceEnd + translate(lang, 'health_check.allPassed')
   }
   if (content === 'health_check.failed') {
     const failedActor = (meta.failed_actor as string) || ''
     const failedReason = (meta.failed_reason as string) || ''
     const name = actorText(failedActor, lang)
-    const reason = failedReason || (lang === 'en' ? 'Unknown error' : '未知错误')
+    const unknownError =
+      lang === 'en' ? 'Unknown error'
+        : lang === 'ja' ? '不明なエラー'
+          : lang === 'ko' ? '알 수 없는 오류'
+            : lang === 'fr' ? 'Erreur inconnue'
+              : lang === 'es' ? 'Error desconocido'
+                : '未知错误'
+    const reason = failedReason || unknownError
     const failed = translate(lang, 'health_check.actorFailed').replace('{actor}', name).replace('{reason}', reason)
-    return failed + '。' + translate(lang, 'health_check.failed') + (lang === 'en' ? '. Please check if the CLI is installed and available.' : '。请检查对应 CLI 是否已安装并可用。')
+    const cliHint =
+      lang === 'en' ? '. Please check if the CLI is installed and available.'
+        : lang === 'ja' ? '。対応する CLI がインストールされ、利用可能か確認してください。'
+          : lang === 'ko' ? '. 해당 CLI가 설치되어 사용 가능한지 확인하세요.'
+            : lang === 'fr' ? '. Vérifiez que le CLI correspondant est installé et disponible.'
+              : lang === 'es' ? '. Comprueba que el CLI correspondiente esté instalado y disponible.'
+                : '。请检查对应 CLI 是否已安装并可用。'
+    return failed + '。' + translate(lang, 'health_check.failed') + cliHint
   }
   return null
 }
@@ -397,12 +430,19 @@ function TaskDoneStats({ stats }: { stats: TaskStats }) {
   )
 }
 
-function RoundEventItem({ entry, lang }: { entry: RoundEventEntry; lang: 'zh-CN' | 'zh-TW' | 'en' }) {
+function RoundEventItem({ entry, lang }: { entry: RoundEventEntry; lang: Language }) {
   if (entry.type === 'thinking') {
+    const thinkingLabel =
+      lang === 'en' ? 'Reasoning'
+        : lang === 'ja' ? '推論中'
+          : lang === 'ko' ? '추론 중'
+            : lang === 'fr' ? 'Raisonnement'
+              : lang === 'es' ? 'Razonamiento'
+                : '推理中'
     return (
       <div className="round-events-item round-events-thinking">
         <Brain size={12} />
-        <span>{lang === 'en' ? 'Reasoning' : '推理中'} ({entry.thinkingLength}ch)</span>
+        <span>{thinkingLabel} ({entry.thinkingLength}ch)</span>
       </div>
     )
   }
@@ -452,7 +492,7 @@ function toolIcon(name: string) {
   return <Wrench size={12} className="shrink-0" />
 }
 
-function formatToolInput(name: string, input: Record<string, unknown>, lang: 'zh-CN' | 'zh-TW' | 'en'): string {
+function formatToolInput(name: string, input: Record<string, unknown>, lang: Language): string {
   const n = name.toLowerCase()
   if (n === 'bash') {
     const cmd = input.command as string | undefined
@@ -501,7 +541,11 @@ function formatMessageMeta(entry: TranscriptEntry, lang: ReturnType<typeof useLa
     const roundLabel =
       lang === 'en' ? `Round ${round}`
         : lang === 'zh-TW' ? `第 ${round} 輪`
-          : `第 ${round} 轮`
+          : lang === 'ja' ? `ラウンド ${round}`
+            : lang === 'ko' ? `라운드 ${round}`
+              : lang === 'fr' ? `Tour ${round}`
+                : lang === 'es' ? `Ronda ${round}`
+                  : `第 ${round} 轮`
     parts.push(roundLabel)
   }
   if (elapsedMs != null) parts.push(formatDuration(elapsedMs))

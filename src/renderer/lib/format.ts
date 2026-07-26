@@ -280,7 +280,11 @@ export function eventPayloadSummary(event: Event, lang?: Language): string {
   const tail =
     lang === 'en' ? '\n…(truncated)'
       : lang === 'zh-TW' ? '\n…（已截斷）'
-        : '\n...（已截断）'
+        : lang === 'ja' ? '\n…（省略されました）'
+          : lang === 'ko' ? '\n…(잘림)'
+            : lang === 'fr' ? '\n…(tronqué)'
+              : lang === 'es' ? '\n…(truncado)'
+                : '\n...（已截断）'
   return `${decoded.slice(0, 1200).trimEnd()}${tail}`
 }
 

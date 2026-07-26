@@ -36,7 +36,7 @@ function dispatchWindowEvent(eventName: string) {
 
 function readLanguagePref(): LanguagePref {
   const v = getStoredValue(LANGUAGE_KEY)
-  if (v === 'auto' || v === 'zh-CN' || v === 'zh-TW' || v === 'en') return v
+  if (v === 'auto' || v === 'zh-CN' || v === 'zh-TW' || v === 'en' || v === 'ja' || v === 'ko' || v === 'fr' || v === 'es') return v
   return 'auto'
 }
 

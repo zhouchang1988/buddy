@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, PanelBottomOpen } from 'lucide-react'
 import { ACTOR_LABEL_KEY } from '../lib/format'
 import { useLanguage, useT } from '../hooks/useI18n'
+import type { Language } from '../lib/i18n'
 import type { ActorStreamLine } from '../hooks/useBuddy'
 
 const HINTS_ZH_CN = [
@@ -43,10 +44,69 @@ const HINTS_EN = [
   'Petting the cat', 'Wrangling the dog', 'Plotting blame', 'Dodging responsibility', 'Drafting an excuse',
 ]
 
+const HINTS_JA = [
+  '解析中', '思考中', '計画中', '実行中', '検索中', '生成中', '検証中', 'リファクタ中', 'マージ中', 'まとめ中',
+  '細工中', '即興中', '忙しいふり', '盛り付け中', '例のアレ処理中', '整理し直し中', '頭の中で調理中',
+  'ゆっくり前進中', '弱火で煮込み中', '謎の稼働中', '開始中', '充電中', '妄想生成中',
+  'コード蒸煮中', 'なんとか辻褄合わせ中', 'CPU 空回し中', 'オカルト最適化中', 'すぐやります', 'たぶん大丈夫', 'もうすぐ出ます',
+  '気功中', '瞑想中', '経典読解中', '型の練習中', '丹薬精製中', '体を鍛え中', '御剣検索中',
+  'リファクタの劫を渡り中', '生成の壁を突破中', '型を納め中',
+  '仕込み中', '炒め中', '弱火でコトコト', '味付け中', '漬け込み中', '生地を寝かせ中', '焼成中', 'ソースを煮詰め中', '盛り付け中', '鍋から出荷',
+  '神経パルス中', '量子ゆらぎ中', 'ベクトル移動中', '行列シャッフル中', 'トークン浪費中', 'モデル共振中', '意識ロード中', 'ちょっと混乱中',
+  'ちゃぶ台返し', '散らかした', '変な色にした', '終わった', '逃げた', '剣舞中', '大刀振り回し中',
+  '猫を撫で中', '犬の世話中', '責任転嫁を画策中', '責任回避中', '言い訳を起草中',
+]
+
+const HINTS_KO = [
+  '분석 중', '추론 중', '계획 중', '실행 중', '검색 중', '생성 중', '검증 중', '리팩터링 중', '병합 중', '마무리 중',
+  '만지작거리는 중', '즉흥 연주 중', '바쁜 척하는 중', '치장하는 중', '그거 처리하는 중', '다시 정리하는 중', '머릿속으로 볶는 중',
+  '느긋하게 진행 중', '약불로 끓이는 중', '신비롭게 작동 중', '착수 중', '충전 중', '망상 생성 중',
+  '코드 찌는 중', '억지로 맞추는 중', 'CPU 공회전 중', '점술 최적화 중', '바로 합니다', '괜찮을 겁니다', '곧 나옵니다',
+  '기공 중', '명상 중', '경전 공부 중', '동작 연습 중', '단약 제조 중', '단련 중', '검 타고 검색 중',
+  '리팩터링 겁난 극복 중', '생성의 벽 돌파 중', '마무리 동작 중',
+  '재료 준비 중', '볶는 중', '약불 조림 중', '간 맞추는 중', '재우는 중', '반죽 숙성 중', '굽는 중', '소스 졸이는 중', '플레이팅 중', '냄비에서 출하',
+  '신경 펄스 중', '양자 요동 중', '벡터 이동 중', '행렬 셔플 중', '토큰 탕진 중', '모델 공명 중', '의식 로딩 중', '살짝 혼란 중',
+  '상 엎었다', '어질렀다', '이상하게 칠했다', '망했다', '도망쳤다', '검무 중', '대도 휘두르는 중',
+  '고양이 쓰다듬는 중', '개 돌보는 중', '책임 떠넘기기 꾸미는 중', '책임 회피 중', '핑계 초안 작성 중',
+]
+
+const HINTS_FR = [
+  'Analyse', 'Réflexion', 'Planification', 'Exécution', 'Recherche', 'Génération', 'Validation', 'Refactorisation', 'Fusion', 'Finalisation',
+  'Bricolage', 'Improvisation', 'Fait semblant d\'être occupé', 'Ajout de flair', 'Fait le truc', 'Remet de l\'ordre', 'Mijote des idées',
+  'Réflexion lente', 'Mijotage à feu doux', 'Travail mystérieux', 'C\'est parti', 'Recharge', 'Hallucine de façon responsable',
+  'Mijote le code', 'Résout l\'insoluble', 'CPU en feu', 'Tentative mystique', 'Je m\'en occupe', 'Ça devrait aller', 'Presque là',
+  'Canalise l\'énergie', 'En méditation', 'Étudie les écritures', 'Pratique la forme', 'Prépare l\'élixir', 'Trempe le corps', 'Recherche à vol d\'épée',
+  'Survit à la refactorisation', 'Franchit la génération', 'Clôt la forme',
+  'Prépare les ingrédients', 'Sauté en cours', 'Mijotage lent', 'Assaisonnement', 'Marinade', 'Repos de la pâte', 'Cuisson', 'Réduction de la sauce', 'Dressage', 'Sortie du wok',
+  'Impulsions neurales', 'Gigue quantique', 'Saut de vecteurs', 'Mélange de matrices', 'Brûle des tokens', 'Résonance du modèle', 'Chargement de la conscience', 'Légèrement confus',
+  'A renversé la table', 'A tout sali', 'A peint bizarrement', 'C\'est fini', 'A fui', 'Danse de l\'épée', 'Brandit les lames',
+  'Caresse le chat', 'Gère le chien', 'Prépare un coupable', 'Esquive la responsabilité', 'Rédige une excuse',
+]
+
+const HINTS_ES = [
+  'Analizando', 'Razonando', 'Planificando', 'Ejecutando', 'Buscando', 'Generando', 'Validando', 'Refactorizando', 'Fusionando', 'Rematando',
+  'Trasteando', 'Improvisando', 'Fingiendo estar ocupado', 'Dándole brillo', 'Haciendo eso', 'Reordenando', 'Cociendo ideas',
+  'Reflexionando despacio', 'A fuego lento', 'Trabajo misterioso', 'En marcha', 'Cargando energía', 'Alucinando con responsabilidad',
+  'Cociendo el código', 'Cuadrando el círculo', 'CPU en llamas', 'Ajustes místicos', 'En ello', 'Debería ir bien', 'Casi listo',
+  'Canalizando energía', 'En meditación', 'Estudiando escrituras', 'Practicando la forma', 'Preparando el elixir', 'Templando el cuerpo', 'Búsqueda a vuelo de espada',
+  'Sobreviviendo a la refactorización', 'Rompiendo la generación', 'Cerrando la forma',
+  'Preparando ingredientes', 'Sofriendo', 'Cocción lenta', 'Sazonando', 'Marinando', 'Reposando la masa', 'Horneando', 'Reduciendo la salsa', 'Emplatando', 'Fuera del wok',
+  'Pulsos neuronales', 'Temblor cuántico', 'Salto de vectores', 'Barajando matrices', 'Quemando tokens', 'Resonancia del modelo', 'Cargando conciencia', 'Ligeramente confundido',
+  'Volcó la mesa', 'Lo manchó todo', 'Lo pintó raro', 'Se acabó', 'Huyó', 'Danza de la espada', 'Blandiendo espadas',
+  'Acariciando al gato', 'Lidiando con el perro', 'Planeando echar la culpa', 'Esquivando responsabilidad', 'Redactando una excusa',
+]
+
 const dotsPhases = ['', '.', '..', '...']
 
-function pickHint(lang: 'zh-CN' | 'zh-TW' | 'en'): string {
-  const bank = lang === 'en' ? HINTS_EN : lang === 'zh-TW' ? HINTS_ZH_TW : HINTS_ZH_CN
+function pickHint(lang: Language): string {
+  const bank =
+    lang === 'en' ? HINTS_EN
+      : lang === 'zh-TW' ? HINTS_ZH_TW
+        : lang === 'ja' ? HINTS_JA
+          : lang === 'ko' ? HINTS_KO
+            : lang === 'fr' ? HINTS_FR
+              : lang === 'es' ? HINTS_ES
+                : HINTS_ZH_CN
   return bank[Math.floor(Math.random() * bank.length)]
 }
 

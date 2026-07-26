@@ -8,7 +8,7 @@ import { useUpdateGlobalSettings } from '../hooks/useBuddy'
 import { useTestLauncher } from '../hooks/useBuddy'
 import type { TestLauncherResult } from '../../shared/types'
 import { useLanguagePref, useSendShortcut, useT, TFunction } from '../hooks/useI18n'
-import { LANGUAGE_OPTIONS, LanguagePref, SendShortcut } from '../lib/i18n'
+import { LANGUAGE_OPTIONS, Language, LanguagePref, SendShortcut } from '../lib/i18n'
 import {
   type ShortcutId,
   type KeyBinding,
@@ -197,7 +197,16 @@ function GeneralSection() {
   const { pref, setPref, detected } = useLanguagePref()
   const { shortcut, setShortcut } = useSendShortcut()
 
-  const detectedLabel = detected === 'zh-CN' ? '简体中文' : detected === 'zh-TW' ? '繁體中文' : 'English'
+  const detectedLabels: Record<Language, string> = {
+    'zh-CN': '简体中文',
+    'zh-TW': '繁體中文',
+    'en': 'English',
+    'ja': '日本語',
+    'ko': '한국어',
+    'fr': 'Français',
+    'es': 'Español'
+  }
+  const detectedLabel = detectedLabels[detected]
 
   const sendOptions: Array<{ value: SendShortcut; symbol: string; text: string; desc: string }> = [
     { value: 'shift-enter', symbol: '⇧⏎', text: t('settings.general.send.shiftEnter'), desc: t('settings.general.send.shiftEnterHint') },

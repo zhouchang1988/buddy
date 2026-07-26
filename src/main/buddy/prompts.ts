@@ -228,11 +228,24 @@ export function detectHumanLanguage(
   if (!text) return ''
 
   let cjkCount = 0
+  let kanaCount = 0
+  let hangulCount = 0
+  let spanishCount = 0
   for (const ch of text) {
     if (('一' <= ch && ch <= '鿿') || ('㐀' <= ch && ch <= '䶿')) cjkCount += 1
+    else if ('぀' <= ch && ch <= 'ヿ') kanaCount += 1
+    else if (('가' <= ch && ch <= '힯') || ('ᄀ' <= ch && ch <= 'ᇿ')) hangulCount += 1
+    else if (ch === '¿' || ch === '¡' || ch === 'ñ' || ch === 'Ñ') spanishCount += 1
   }
   const nonSpace = text.replace(/\s/g, '').length
-  return nonSpace > 0 && cjkCount / nonSpace > 0.1 ? '中文' : 'English'
+  if (nonSpace === 0) return ''
+  if (kanaCount / nonSpace > 0.1) return '日本語'
+  if (hangulCount / nonSpace > 0.1) return '한국어'
+  // ¿/¡ are unique to Spanish; ñ is near-unique, so a low ratio suffices.
+  // French is deliberately not detected: its accented letters overlap with
+  // Portuguese/German and would misclassify.
+  if (text.includes('¿') || text.includes('¡') || spanishCount / nonSpace > 0.02) return 'Español'
+  return cjkCount / nonSpace > 0.1 ? '中文' : 'English'
 }
 
 export function nextActor(actor: string, settings: Partial<TaskSettings>): string {

@@ -65,7 +65,7 @@ Detects whether a command is a "native" CLI (Codex/codex/opencode/kimi) or a gen
 
 - React 18 + TanStack React Query 5. Components in `src/renderer/components/`, hooks in `hooks/`.
 - Preload exposes `window.api` (system ops) and `window.buddy` (all buddy operations) via contextBridge.
-- 23 preset themes (CSS custom properties), i18n (zh-CN/zh-TW/en with CJK auto-detect).
+- 23 preset themes (CSS custom properties), i18n (zh-CN/zh-TW/en/ja/ko/fr/es with auto-detect).
 - `@` alias maps to `src/renderer` (renderer only; main process uses relative paths).
 
 ## Conventions
